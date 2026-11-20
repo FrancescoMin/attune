@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'" />
+  <title>Attune Mini Controls</title>
+  <link rel="stylesheet" href="mini.css" />
+</head>
+<body>
+  <div id="mini-root">
+    <header class="m-head">
+      <div class="m-brand">
+        <span class="dot" id="m-dot"></span>
+        <span class="logo">at<b>·</b>tune</span>
+        <img class="m-bud" id="m-bud" src="assets/buds/espeon_orange_right.webp" alt="" />
+      </div>
+      <div class="m-acts">
+        <button class="ib" id="m-switch" title="Quick Controls">
+          <svg width="11" height="11" viewBox="0 0 16 16" fill="none"><path d="M2 5h10M9 2l3 3-3 3M14 11H4M7 8l-3 3 3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <button class="ib" id="m-open" title="Open Attune">
+          <svg width="11" height="11" viewBox="0 0 16 16" fill="none"><path d="M6 3H3v10h10v-3M9 3h4v4M13 3L7 9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <button class="ib close" id="m-close" title="Hide">
+          <svg width="10" height="10" viewBox="0 0 12 12"><path d="M2 2l8 8M10 2l-8 8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- Disconnected -->
+    <section id="m-disc" class="m-disc">
+      <img id="m-disc-img" src="assets/buds/espeon_orange_right.webp" alt="Buds" />
+      <div class="m-disc-btns">
+        <button class="btn-acc" id="m-connect">Connect</button>
+        <button class="btn-sub" id="m-disc-open" title="Open Attune">↗</button>
+      </div>
+    </section>
+
+    <!-- Connected -->
+    <section id="m-conn" class="m-conn" style="display:none;">
+      <!-- Battery strip -->
+      <div class="m-batt">
+        <div class="bc disc" id="mb-l">
+          <div class="bt"><span class="bl">L</span><span class="bv"><span id="mv-l">—</span><i class="mc" id="mc-l" style="display:none">⚡</i></span></div>
+          <div class="bb"><i id="mbar-l"></i></div>
+        </div>
+        <div class="bc disc" id="mb-c">
+          <div class="bt"><span class="bl">C</span><span class="bv"><span id="mv-c">—</span><i class="mc" id="mc-c" style="display:none">⚡</i></span></div>
+          <div class="bb"><i id="mbar-c"></i></div>
+        </div>
+        <div class="bc disc" id="mb-r">
+          <div class="bt"><span class="bl">R</span><span class="bv"><span id="mv-r">—</span><i class="mc" id="mc-r" style="display:none">⚡</i></span></div>
+          <div class="bb"><i id="mbar-r"></i></div>
+        </div>
+      </div>
+
+      <!-- Noise Control (icon-only + strength bar) -->
+      <div class="m-box">
+        <div class="m-anc" id="m-anc">
+          <button data-mode="off" title="Noise Control: Off">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="1.9"/><path d="M6.5 17.5l11-11" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>
+          </button>
+          <button data-mode="trans" title="Transparency">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M7 15a5 5 0 0 1 10 0" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/><path d="M4 15a8 8 0 0 1 16 0" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" opacity=".55"/><circle cx="12" cy="15.5" r="1.7" fill="currentColor"/></svg>
+          </button>
+          <button data-mode="nc" title="Noise Cancellation (ANC)">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M12 3l7 3.2v5.4c0 4.6-3 8.4-7 9.4-4-1-7-4.8-7-9.4V6.2L12 3z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M9 12.2l2 2 4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+        </div>
+        <div class="m-str" id="m-str" style="display:none;">
+          <button data-lvl="3" title="ANC Low">L</button>
+          <button data-lvl="5" title="ANC Mid">M</button>
+          <button data-lvl="4" title="ANC High">H</button>
+          <button data-lvl="6" title="ANC Adaptive">AUTO</button>
+        </div>
+      </div>
+
+      <!-- Bass Enhance + Low Latency (single row) -->
+      <div class="m-row" id="m-bass-ll-row">
+        <div class="m-bass" id="m-bass-wrap">
+          <button class="pill-tog" id="m-bass-btn" title="Bass Enhance">BASS</button>
+          <div class="m-blvls" id="m-blvls" style="display:none;">
+            <button data-lvl="1">1</button>
+            <button data-lvl="2">2</button>
+            <button data-lvl="3">3</button>
+            <button data-lvl="4">4</button>
+            <button data-lvl="5">5</button>
+          </div>
+        </div>
+        <button class="pill-tog ll" id="m-ll-btn" title="Low Latency Mode">LL</button>
+      </div>
+
+      <!-- Cyclic EQ selector -->
+      <div class="m-eq" id="m-eq-row">
+        <button class="eq-arr" id="m-eq-prev" title="Previous EQ preset">‹</button>
+        <button class="eq-mid" id="m-eq-cur" title="Click to cycle EQ preset">
+          <span class="eq-name" id="m-eq-name">Balanced</span>
+          <span class="eq-idx" id="m-eq-idx">1/7</span>
+        </button>
+        <button class="eq-arr" id="m-eq-next" title="Next EQ preset">›</button>
+      </div>
+    </section>
+  </div>
+  <script src="mini.js"></script>
+</body>
+</html>

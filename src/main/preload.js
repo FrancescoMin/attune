@@ -35,6 +35,14 @@ contextBridge.exposeInMainWorld('cmf', {
   // tray battery tooltip
   setTrayBattery: (data) => ipcRenderer.send('tray:battery', data),
 
+  // tray popover
+  pushPopoverState: (state) => ipcRenderer.send('popover:state', state),
+  onPopoverAction: (cb) => ipcRenderer.on('popover:action', (_e, action) => cb(action)),
+  popoverGetState: () => ipcRenderer.invoke('popover:getState'),
+  onPopoverState: (cb) => ipcRenderer.on('popover:state', (_e, state) => cb(state)),
+  popoverAction: (action) => ipcRenderer.send('popover:action', action),
+  popoverResize: (height) => ipcRenderer.send('popover:resize', height),
+
   // feedback
   feedbackSave: (entry) => ipcRenderer.invoke('feedback:save', entry),
   feedbackOpen: () => ipcRenderer.invoke('feedback:open')

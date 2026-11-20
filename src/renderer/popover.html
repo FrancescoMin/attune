@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'" />
+  <title>Attune Quick Controls</title>
+  <link rel="stylesheet" href="popover.css" />
+</head>
+<body>
+  <div id="pop-root">
+    <header class="pop-head">
+      <div class="pop-brand">
+        <span class="dot" id="status-dot"></span>
+        <span class="logo">ATTUNE</span>
+        <span class="dev" id="pop-dev">Disconnected</span>
+      </div>
+      <div class="pop-actions">
+        <button class="icon-btn" id="btn-switch-mini" title="Mini Controls">
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M2 5h10M9 2l3 3-3 3M14 11H4M7 8l-3 3 3 3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <button class="icon-btn" id="btn-open-main" title="Open Attune">
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M6 3H3v10h10v-3M9 3h4v4M13 3L7 9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- Disconnected -->
+    <section id="view-disc" class="pop-disc">
+      <img id="disc-img" src="assets/buds/espeon_orange_right.webp" alt="Buds" />
+      <div class="disc-title" id="disc-title">Buds not connected</div>
+      <div class="disc-sub">Take your earbuds out of the case or pair via Bluetooth.</div>
+      <div class="disc-btns">
+        <button class="btn-primary" id="btn-pop-connect">Connect</button>
+        <button class="btn-ghost" id="btn-pop-open">Open App</button>
+      </div>
+    </section>
+
+    <!-- Connected -->
+    <section id="view-conn" class="pop-conn" style="display:none;">
+      <!-- Battery -->
+      <div class="batt-strip">
+        <div class="b-cell disc" id="pb-l">
+          <div class="b-top"><span class="b-lbl">L</span><span class="b-val"><span id="pv-l">—</span><span class="chg" id="pc-l" style="display:none">⚡</span></span></div>
+          <div class="b-bar"><i id="pbar-l"></i></div>
+        </div>
+        <div class="b-cell disc" id="pb-c">
+          <div class="b-top"><span class="b-lbl">CASE</span><span class="b-val"><span id="pv-c">—</span><span class="chg" id="pc-c" style="display:none">⚡</span></span></div>
+          <div class="b-bar"><i id="pbar-c"></i></div>
+        </div>
+        <div class="b-cell disc" id="pb-r">
+          <div class="b-top"><span class="b-lbl">R</span><span class="b-val"><span id="pv-r">—</span><span class="chg" id="pc-r" style="display:none">⚡</span></span></div>
+          <div class="b-bar"><i id="pbar-r"></i></div>
+        </div>
+      </div>
+
+      <!-- Noise Control -->
+      <div class="sec">
+        <div class="sec-h">Noise Control</div>
+        <div class="seg" id="p-anc-seg">
+          <button data-mode="off">Off</button>
+          <button data-mode="trans">Transparency</button>
+          <button data-mode="nc">ANC</button>
+        </div>
+        <div class="pills" id="p-anc-str" style="display:none;">
+          <button data-lvl="3">Low</button>
+          <button data-lvl="5">Mid</button>
+          <button data-lvl="4">High</button>
+          <button data-lvl="6">Adaptive</button>
+        </div>
+      </div>
+
+      <!-- Bass Enhance -->
+      <div class="sec" id="p-sec-bass">
+        <div class="sec-row">
+          <span class="sec-h" style="margin-bottom:0;">Bass Enhance</span>
+          <label class="switch"><input type="checkbox" id="p-bass-on"><span class="track"></span></label>
+        </div>
+        <div class="bass-levels" id="p-bass-lvls" style="display:none;">
+          <button data-lvl="1">1</button>
+          <button data-lvl="2">2</button>
+          <button data-lvl="3">3</button>
+          <button data-lvl="4">4</button>
+          <button data-lvl="5">5</button>
+        </div>
+      </div>
+
+      <!-- Equalizer -->
+      <div class="sec" id="p-sec-eq">
+        <div class="sec-h">Equalizer</div>
+        <div class="chips" id="p-eq-chips">
+          <button data-eq="0">Balanced</button>
+          <button data-eq="1">Rock</button>
+          <button data-eq="2">Electronic</button>
+          <button data-eq="3">Pop</button>
+          <button data-eq="4">Vocals</button>
+          <button data-eq="5">Classical</button>
+          <button data-eq="6">Custom</button>
+        </div>
+      </div>
+
+      <!-- Footer quick toggles -->
+      <div class="pop-foot">
+        <label class="foot-toggle">
+          <span>Low Latency</span>
+          <label class="switch sm"><input type="checkbox" id="p-low-lat"><span class="track"></span></label>
+        </label>
+        <button class="foot-disc" id="btn-pop-disc">Disconnect</button>
+      </div>
+    </section>
+  </div>
+  <script src="popover.js"></script>
+</body>
+</html>

@@ -40,6 +40,8 @@ function showView(id) {
 const btnConnect = $('btn-connect');
 
 btnConnect.addEventListener('click', () => {
+  isConnecting = true;
+  emitPopoverState();
   setConnectStatus('Looking for your buds', 'busy', true);
   btnConnect.disabled = true;
   btnConnect.textContent = 'Connecting…';
@@ -53,8 +55,10 @@ function setConnectStatus(text, cls = '', busy = false) {
 }
 
 function resetConnectButton() {
+  isConnecting = false;
   btnConnect.disabled = false;
   btnConnect.textContent = 'Connect';
+  emitPopoverState();
 }
 
 function onConnectError(kind) {
@@ -68,6 +72,14 @@ function onConnectError(kind) {
 }
 
 let currentModel = null;
+let isConnected = false;
+let isConnecting = false;
+let currentAncLevel = 1;
+let currentEqLevel = 0;
+const trayBatt = { l: null, r: null, c: null };
+const trayChg = { l: false, r: false, c: false };
+let bassEnabled = false;
+let bassLevel = 1;
 
 function onModelDetected(model, sku) {
   currentModel = model;
@@ -87,13 +99,18 @@ function onModelDetected(model, sku) {
 }
 
 function onSessionStart() {
+  isConnected = true;
+  isConnecting = false;
   resetConnectButton();
   $('dev-conn').textContent = 'Connected';
   showView('control-view');
   restoreSmartTuning();
+  emitPopoverState();
 }
 
 function onSessionEnd() {
+  isConnected = false;
+  isConnecting = false;
   $('tb-device').textContent = '';
   showView('connect-view');
   setConnectStatus('Buds disconnected.', '');
@@ -101,7 +118,9 @@ function onSessionEnd() {
   resetControlState();
   stopSmart(); // keeps the saved preference; just halts watching
   trayBatt.l = trayBatt.r = trayBatt.c = null;
+  trayChg.l = trayChg.r = trayChg.c = false;
   pushTrayBattery();
+  emitPopoverState();
 }
 
 async function disconnect() {
@@ -162,6 +181,7 @@ function setBudColor(color, persist = true) {
   if (sw) sw.querySelectorAll('button').forEach((b) => b.classList.toggle('on', b.dataset.color === color));
 
   if (persist) localStorage.setItem(COLOR_PREF, color);
+  emitPopoverState();
 }
 
 (function bindSwatches() {
@@ -195,8 +215,10 @@ setBudColor(localStorage.getItem(COLOR_PREF) || 'orange', false);
 /* ------------------------------------------------------------------ *
  * Battery (callback: setBattery)                                     *
  * ------------------------------------------------------------------ */
-const trayBatt = { l: null, r: null, c: null };
-function pushTrayBattery() { try { if (window.cmf && window.cmf.setTrayBattery) window.cmf.setTrayBattery(trayBatt); } catch (_) {} }
+function pushTrayBattery() {
+  try { if (window.cmf && window.cmf.setTrayBattery) window.cmf.setTrayBattery(trayBatt); } catch (_) {}
+  emitPopoverState();
+}
 
 function setBattery(side, percentage, charging = false) {
   const map = { l: 'l', r: 'r', c: 'c' };
@@ -213,6 +235,7 @@ function setBattery(side, percentage, charging = false) {
     barEl.style.width = '0%';
     chgEl.style.display = 'none';
     trayBatt[s] = null;
+    trayChg[s] = false;
     pushTrayBattery();
     return;
   }
@@ -222,6 +245,7 @@ function setBattery(side, percentage, charging = false) {
   barEl.style.width = percentage + '%';
   chgEl.style.display = charging ? 'inline' : 'none';
   trayBatt[s] = percentage;
+  trayChg[s] = !!charging;
   pushTrayBattery();
 }
 
@@ -257,6 +281,7 @@ $('anc-strength').addEventListener('click', (e) => {
 });
 
 function setANCStatus(level) {
+  currentAncLevel = level;
   let mode = 'off';
   if (level === 1) mode = 'off';
   else if (level === 2) mode = 'trans';
@@ -272,6 +297,7 @@ function setANCStatus(level) {
   } else {
     wrap.classList.remove('open');
   }
+  emitPopoverState();
 }
 function setANCDisplayUI() {}
 function displayANC() {}
@@ -294,6 +320,7 @@ $('eq-chips').addEventListener('click', (e) => {
 });
 
 function setEQfromRead(level) {
+  currentEqLevel = level;
   $('eq-chips').querySelectorAll('button').forEach((b) => b.classList.toggle('on', parseInt(b.dataset.eq, 10) === level));
   const custom = $('eq-custom');
   if (level === 6) {
@@ -302,6 +329,7 @@ function setEQfromRead(level) {
   } else {
     custom.classList.remove('open');
   }
+  emitPopoverState();
 }
 
 function setCustomEQ(array) {
@@ -337,13 +365,11 @@ function setAdvancedEQfromRead(status) { $('adv-eq').checked = status === 1; }
 /* ------------------------------------------------------------------ *
  * Bass enhance (callbacks: setBassEnhance, setBassLevel)             *
  * ------------------------------------------------------------------ */
-let bassEnabled = false;
-let bassLevel = 1;
-
 $('bass-on').addEventListener('change', (e) => {
   bassEnabled = e.target.checked;
   $('bass-wrap').classList.toggle('open', bassEnabled);
   set_enhanced_bass(bassEnabled, bassLevel);
+  emitPopoverState();
 });
 $('bass-level').addEventListener('input', () => {
   $('bass-level-v').textContent = $('bass-level').value;
@@ -351,17 +377,20 @@ $('bass-level').addEventListener('input', () => {
 $('bass-level').addEventListener('change', () => {
   bassLevel = parseInt($('bass-level').value, 10);
   set_enhanced_bass(bassEnabled, bassLevel);
+  emitPopoverState();
 });
 
 function setBassEnhance(state) {
   bassEnabled = state === 1 || state === true;
   $('bass-on').checked = bassEnabled;
   $('bass-wrap').classList.toggle('open', bassEnabled);
+  emitPopoverState();
 }
 function setBassLevel(level) {
   bassLevel = Math.max(1, Math.min(5, Math.round(level)));
   $('bass-level').value = bassLevel;
   $('bass-level-v').textContent = bassLevel;
+  emitPopoverState();
 }
 
 /* ------------------------------------------------------------------ *
@@ -370,10 +399,76 @@ function setBassLevel(level) {
 $('in-ear').addEventListener('change', (e) => setInEar_BT(e.target.checked ? 1 : 0));
 function setInEarCheckbox(status) { $('in-ear').checked = status === 1; }
 
-$('low-lat').addEventListener('change', (e) => setLatency(e.target.checked ? 1 : 0));
+$('low-lat').addEventListener('change', (e) => { setLatency(e.target.checked ? 1 : 0); emitPopoverState(); });
 function setLatencyModeCheckbox(status) {
   if (status === 1) $('low-lat').checked = true;
   else if (status === 2) $('low-lat').checked = false;
+  emitPopoverState();
+}
+
+/* ------------------------------------------------------------------ *
+ * Tray popover sync                                                  *
+ * ------------------------------------------------------------------ */
+function emitPopoverState() {
+  if (!window.cmf || !window.cmf.pushPopoverState) return;
+  const meta = COLOR_META[currentColor] || COLOR_META.orange;
+  const base = currentModel ? currentModel.base : 'B172';
+  window.cmf.pushPopoverState({
+    connected: isConnected,
+    connecting: isConnecting,
+    modelName: currentModel ? currentModel.name : null,
+    codename: currentCodename,
+    color: currentColor,
+    accent: meta.accent,
+    accentDim: meta.dim,
+    battery: { l: trayBatt.l, r: trayBatt.r, c: trayBatt.c, chg: { ...trayChg } },
+    anc: currentAncLevel,
+    eq: currentEqLevel,
+    bass: { enabled: bassEnabled, level: bassLevel },
+    lowLat: !!$('low-lat').checked,
+    caps: { bass: CAPS.bass.includes(base), presets: CAPS.presets.includes(base) }
+  });
+}
+
+if (window.cmf && window.cmf.onPopoverAction) {
+  window.cmf.onPopoverAction((action) => {
+    if (!action || !action.type) return;
+    if (action.type === 'connect') {
+      if (!isConnected && !isConnecting) btnConnect.click();
+    } else if (action.type === 'disconnect') {
+      disconnect();
+    } else if (action.type === 'anc') {
+      const lvl = action.level === 'nc' ? lastNcLevel : Number(action.level);
+      if (lvl >= 1 && lvl <= 6) applyAnc(lvl);
+    } else if (action.type === 'bass-toggle') {
+      bassEnabled = !!action.on;
+      $('bass-on').checked = bassEnabled;
+      $('bass-wrap').classList.toggle('open', bassEnabled);
+      set_enhanced_bass(bassEnabled, bassLevel);
+      emitPopoverState();
+    } else if (action.type === 'bass-level') {
+      const lvl = Math.max(1, Math.min(5, Math.round(Number(action.level) || 1)));
+      bassLevel = lvl;
+      bassEnabled = true;
+      $('bass-on').checked = true;
+      $('bass-wrap').classList.add('open');
+      $('bass-level').value = lvl;
+      $('bass-level-v').textContent = lvl;
+      set_enhanced_bass(true, lvl);
+      emitPopoverState();
+    } else if (action.type === 'eq') {
+      const lvl = Number(action.level);
+      if (lvl >= 0 && lvl <= 6) {
+        setListeningMode(lvl);
+        setEQfromRead(lvl);
+      }
+    } else if (action.type === 'low-lat') {
+      const on = !!action.on;
+      $('low-lat').checked = on;
+      setLatency(on ? 1 : 0);
+      emitPopoverState();
+    }
+  });
 }
 
 /* ------------------------------------------------------------------ *
