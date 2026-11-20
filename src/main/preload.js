@@ -16,6 +16,12 @@ contextBridge.exposeInMainWorld('cmf', {
   onMediaUpdate: (cb) => ipcRenderer.on('media:update', (_e, data) => cb(data)),
   onMediaError: (cb) => ipcRenderer.on('media:error', (_e, msg) => cb(msg)),
 
+  // Bluetooth audio codec detection
+  codecDetect: (deviceName) => ipcRenderer.invoke('codec:detect', deviceName),
+  codecStart: (deviceName) => ipcRenderer.invoke('codec:start', deviceName),
+  codecStop: () => ipcRenderer.invoke('codec:stop'),
+  onCodecUpdate: (cb) => ipcRenderer.on('codec:update', (_e, data) => cb(data)),
+
   // music providers (genre/art enrichment)
   providersGet: () => ipcRenderer.invoke('providers:get'),
   providersSet: (patch) => ipcRenderer.invoke('providers:set', patch),

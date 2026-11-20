@@ -2,6 +2,7 @@ const { app, BrowserWindow, ipcMain, shell, Tray, Menu, nativeImage, screen } = 
 const path = require('path');
 const fs = require('fs');
 const media = require('./media');
+const codec = require('./codec');
 
 // CMF / Nothing earbuds RFCOMM service class IDs used by ear (web).
 const SPP_UUID = 'aeac4a03-dff5-498f-843a-34487cf133eb';
@@ -77,6 +78,7 @@ function createWindow() {
 
   // Smart Tuning backend (system media detection, genre lookup, Spotify).
   media.register(mainWindow);
+  codec.register(mainWindow);
 
   // --- Web Serial permission wiring -------------------------------------------------
   // Grant the 'serial' permission so navigator.serial works without a prompt.
@@ -186,6 +188,7 @@ function createWindow() {
   });
   mainWindow.on('closed', () => {
     media.dispose();
+    codec.dispose();
     mainWindow = null;
     if (popoverWindow && !popoverWindow.isDestroyed()) {
       try { popoverWindow.destroy(); } catch (_) {}
@@ -462,6 +465,7 @@ if (!gotLock) {
   app.on('before-quit', () => {
     app.isQuitting = true;
     media.dispose();
+    codec.dispose();
     if (popoverWindow && !popoverWindow.isDestroyed()) { try { popoverWindow.destroy(); } catch (_) {} popoverWindow = null; }
     if (tray) { try { tray.destroy(); } catch (_) {} tray = null; }
   });

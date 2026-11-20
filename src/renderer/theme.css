@@ -331,6 +331,20 @@ select:hover { border-color: var(--muted); }
 /* force-model picker */
 #dev-change { color: var(--muted); cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
 #dev-change:hover { color: var(--accent); }
+
+/* Bluetooth audio codec indicator */
+.codec-pill, .codec-badge {
+  font-family: 'Mono', monospace; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.1em;
+  color: var(--muted); border: 1px solid var(--line-2); border-radius: 20px; padding: 1px 8px;
+  display: inline-block; vertical-align: middle; transition: color 0.2s, border-color 0.2s;
+}
+.codec-pill { cursor: pointer; }
+.codec-pill:hover { border-color: var(--muted); color: var(--text); }
+.codec-badge { margin-left: 8px; padding: 2px 9px; }
+.codec-pill.hi-res, .codec-badge.hi-res { color: var(--accent); border-color: var(--accent-dim); }
+.codec-pill.good, .codec-badge.good { color: var(--green); border-color: rgba(41,196,107,0.4); }
+.codec-pill.standard, .codec-badge.standard { color: var(--text); border-color: var(--line-2); }
+.codec-pill.call, .codec-badge.call { color: var(--yellow); border-color: rgba(255,196,0,0.4); }
 .model-picker .mp-row { display: flex; gap: 8px; align-items: center; }
 .model-picker select { flex: 1; }
 #dev-serial { color: var(--text); font-family: 'Mono', monospace; }

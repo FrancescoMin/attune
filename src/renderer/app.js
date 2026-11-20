@@ -107,6 +107,9 @@ function onSessionStart() {
   $('dev-conn').textContent = 'Connected';
   showView('control-view');
   restoreSmartTuning();
+  if (window.cmf && window.cmf.codecStart && !new URLSearchParams(location.search).get('demo')) {
+    window.cmf.codecStart(currentModel ? currentModel.name : '');
+  }
   emitPopoverState();
 }
 
@@ -118,6 +121,8 @@ function onSessionEnd() {
   setConnectStatus('Buds disconnected.', '');
   resetConnectButton();
   resetControlState();
+  if (window.cmf && window.cmf.codecStop) window.cmf.codecStop();
+  renderCodecInfo(null);
   stopSmart(); // keeps the saved preference; just halts watching
   trayBatt.l = trayBatt.r = trayBatt.c = null;
   trayChg.l = trayChg.r = trayChg.c = false;
@@ -576,7 +581,7 @@ function emitPopoverState() {
   });
 }
 
-if (window.cmf && window.cmf.onPopoverAction) {
+  if (window.cmf && window.cmf.onPopoverAction) {
   window.cmf.onPopoverAction((action) => {
     if (!action || !action.type) return;
     if (action.type === 'connect') {
@@ -615,6 +620,55 @@ if (window.cmf && window.cmf.onPopoverAction) {
       refreshBatteryEtas();
     }
   });
+}
+
+/* ------------------------------------------------------------------ *
+ * Bluetooth audio codec detection                                    *
+ * ------------------------------------------------------------------ */
+function renderCodecInfo(info) {
+  const pill = $('dev-codec');
+  const badge = $('codec-badge');
+  const detail = $('codec-detail');
+  const clsList = ['hi-res', 'good', 'standard', 'call'];
+  const c = (info && info.codec) ? info.codec : '—';
+  const q = (info && info.quality) || 'none';
+  const d = (info && info.detail) || 'Detecting Bluetooth audio link…';
+
+  if (pill) {
+    pill.textContent = c;
+    pill.classList.remove(...clsList);
+    if (clsList.includes(q)) pill.classList.add(q);
+    pill.title = d;
+  }
+  if (badge) {
+    badge.textContent = c;
+    badge.classList.remove(...clsList);
+    if (clsList.includes(q)) badge.classList.add(q);
+  }
+  if (detail) detail.textContent = d;
+}
+
+async function refreshCodec() {
+  if (!window.cmf || !window.cmf.codecDetect) return;
+  const btn = $('codec-refresh');
+  if (btn) { btn.disabled = true; btn.textContent = 'Checking…'; }
+  try {
+    const info = await window.cmf.codecDetect(currentModel ? currentModel.name : '');
+    renderCodecInfo(info);
+  } catch (_) {}
+  if (btn) { btn.disabled = false; btn.textContent = 'Refresh'; }
+}
+
+if ($('codec-refresh')) $('codec-refresh').addEventListener('click', refreshCodec);
+if ($('dev-codec')) {
+  $('dev-codec').addEventListener('click', () => {
+    const row = $('row-codec');
+    if (row) row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    refreshCodec();
+  });
+}
+if (window.cmf && window.cmf.onCodecUpdate) {
+  window.cmf.onCodecUpdate((info) => renderCodecInfo(info));
 }
 
 /* ------------------------------------------------------------------ *
@@ -1248,6 +1302,12 @@ if (new URLSearchParams(location.search).get('demo')) {
     { gestureDevice: 2, gestureType: 9, gestureAction: 18 }
   ]);
   earTipStateStatus(0, 1);
+  renderCodecInfo({
+    codec: 'AAC / SBC',
+    profile: 'A2DP Stereo',
+    quality: 'good',
+    detail: 'A2DP Stereo · 48 kHz · 16-bit · Stereo · Windows BthA2dp (AAC enabled)'
+  });
   // Smart Tuning showcase (no real watching in demo)
   mediaWatching = true; smartOn = true; smartBass = true;
   $('smart-on').checked = true; $('smart-state').textContent = 'On'; $('smart-body').classList.add('open');
