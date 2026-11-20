@@ -156,11 +156,18 @@ button { font-family: inherit; cursor: pointer; color: inherit; border: none; ba
 .batt .lbl { font-family: 'Mono', monospace; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.12em; }
 .batt .pct { font-family: 'Ndot', monospace; font-size: 26px; margin-top: 2px; }
 .batt .pct .chg { color: var(--green); font-size: 16px; margin-left: 4px; }
-.batt .bar { height: 5px; background: #262626; border-radius: 4px; margin-top: 12px; overflow: hidden; }
+.batt .eta {
+  font-family: 'Mono', monospace; font-size: 11px; color: var(--muted);
+  letter-spacing: 0.06em; margin-top: 4px; min-height: 15px;
+}
+.batt.charging .eta { color: var(--green); }
+.batt.low:not(.charging) .eta { color: var(--red); }
+.batt .bar { height: 5px; background: #262626; border-radius: 4px; margin-top: 10px; overflow: hidden; }
 .batt .bar > i { display: block; height: 100%; width: 0%; background: var(--accent); border-radius: 4px; transition: width 0.4s ease, background 0.3s; }
 .batt.low .bar > i { background: var(--red); }
 .batt.disc { opacity: 0.4; }
 .batt.disc .pct { color: var(--muted-2); font-size: 14px; }
+.batt.disc .eta { color: var(--muted-2); }
 
 /* cards */
 .card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px 22px; margin-bottom: 14px; }

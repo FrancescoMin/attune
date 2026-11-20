@@ -15,8 +15,8 @@ function send(action) {
 
 function updateScale() {
   const w = window.innerWidth || 256;
-  const h = window.innerHeight || 196;
-  const baseH = curConnected ? (curNcOpen ? 218 : 194) : 124;
+  const h = window.innerHeight || 188;
+  const baseH = curConnected ? (curNcOpen ? 214 : 188) : 124;
   const sx = Math.max(0.50, Math.min(1.50, w / 256));
   const sy = Math.max(0.46, Math.min(1.50, h / baseH));
   const s = Math.min(sx, sy);
@@ -34,27 +34,31 @@ function updateScale() {
 function fitHeight() {
   updateScale();
   if (!window.cmf || !window.cmf.popoverResize) return;
-  const targetH = curConnected ? (curNcOpen ? 218 : 194) : 124;
+  const targetH = curConnected ? (curNcOpen ? 214 : 188) : 124;
   window.cmf.popoverResize(targetH);
 }
 
-function renderBatt(key, val, chg) {
+function renderBatt(key, val, chg, eta) {
   const cell = $('mb-' + key);
   const vEl = $('mv-' + key);
   const cEl = $('mc-' + key);
+  const eEl = $('meta-' + key);
   const bEl = $('mbar-' + key);
   const off = val === null || val === undefined || isNaN(val);
   cell.classList.toggle('disc', off);
   if (off) {
-    cell.classList.remove('low');
+    cell.classList.remove('low', 'charging');
     vEl.textContent = '—';
     cEl.style.display = 'none';
+    if (eEl) eEl.textContent = '—';
     bEl.style.width = '0%';
     return;
   }
   cell.classList.toggle('low', val <= 20);
+  cell.classList.toggle('charging', !!chg);
   vEl.textContent = val + '%';
   cEl.style.display = chg ? 'inline' : 'none';
+  if (eEl) eEl.textContent = eta || (chg ? 'Charging' : '—');
   bEl.style.width = val + '%';
 }
 
@@ -87,9 +91,10 @@ function render(s) {
   // Battery
   const b = s.battery || {};
   const chg = b.chg || {};
-  renderBatt('l', b.l, chg.l);
-  renderBatt('c', b.c, chg.c);
-  renderBatt('r', b.r, chg.r);
+  const eta = b.eta || {};
+  renderBatt('l', b.l, chg.l, eta.l);
+  renderBatt('c', b.c, chg.c, eta.c);
+  renderBatt('r', b.r, chg.r, eta.r);
 
   // ANC
   const anc = Number(s.anc) || 1;
@@ -100,6 +105,7 @@ function render(s) {
   const str = $('m-str');
   curNcOpen = mode === 'nc';
   str.style.display = curNcOpen ? '' : 'none';
+  if (str.parentElement) str.parentElement.classList.toggle('nc-open', curNcOpen);
   str.querySelectorAll('button').forEach((btn) => {
     btn.classList.toggle('on', Number(btn.dataset.lvl) === anc);
   });

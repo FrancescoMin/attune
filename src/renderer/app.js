@@ -78,6 +78,7 @@ let currentAncLevel = 1;
 let currentEqLevel = 0;
 const trayBatt = { l: null, r: null, c: null };
 const trayChg = { l: false, r: false, c: false };
+const trayEta = { l: null, r: null, c: null };
 let bassEnabled = false;
 let bassLevel = 1;
 
@@ -92,6 +93,7 @@ function onModelDetected(model, sku) {
   applyCapabilities(model.base);
   $('dev-name').textContent = model.name;
   $('tb-device').textContent = model.name;
+  refreshBatteryEtas();
   setConnectStatus('Connected to ' + model.name, '');
   if (model.base !== 'B172') {
     toast('Connected to ' + model.name + ' — Smart Tuning EQ is optimized for CMF Buds Pro 2');
@@ -119,6 +121,8 @@ function onSessionEnd() {
   stopSmart(); // keeps the saved preference; just halts watching
   trayBatt.l = trayBatt.r = trayBatt.c = null;
   trayChg.l = trayChg.r = trayChg.c = false;
+  trayEta.l = trayEta.r = trayEta.c = null;
+  resetDrainTracker();
   pushTrayBattery();
   emitPopoverState();
 }
@@ -213,11 +217,150 @@ buildSwatches();
 setBudColor(localStorage.getItem(COLOR_PREF) || 'orange', false);
 
 /* ------------------------------------------------------------------ *
- * Battery (callback: setBattery)                                     *
+ * Battery & remaining listening time prediction (callback: setBattery)*
  * ------------------------------------------------------------------ */
+// Rated single-charge playback hours (ANC Off / ANC On) & case recharge multiplier by model base.
+const BATTERY_SPECS = {
+  B172: { offHours: 11.0, ancHours: 6.5, caseMult: 3.0 }, // CMF Buds Pro 2
+  B171: { offHours: 8.5,  ancHours: 5.2, caseMult: 3.8 }, // Nothing Ear
+  B162: { offHours: 9.5,  ancHours: 5.5, caseMult: 3.5 }, // Nothing Ear (a)
+  B168: { offHours: 8.0,  ancHours: 5.5, caseMult: 3.4 }, // CMF Buds
+  B163: { offHours: 11.0, ancHours: 6.5, caseMult: 2.6 }, // CMF Buds Pro
+  B155: { offHours: 6.3,  ancHours: 4.0, caseMult: 4.7 }, // Nothing Ear (2)
+  B181: { offHours: 5.7,  ancHours: 4.0, caseMult: 5.0 }, // Nothing Ear (1)
+  B157: { offHours: 7.0,  ancHours: 7.0, caseMult: 3.1 }, // Nothing Ear (stick)
+  B174: { offHours: 8.0,  ancHours: 8.0, caseMult: 2.75 }, // Nothing Ear (open)
+  B164: { offHours: 37.0, ancHours: 22.0, caseMult: 0 },  // CMF Neckband Pro
+  default: { offHours: 8.5, ancHours: 5.5, caseMult: 3.2 }
+};
+
+const drainTracker = {
+  l: { anchorPct: null, anchorAt: 0, lastPct: null },
+  r: { anchorPct: null, anchorAt: 0, lastPct: null }
+};
+
+function resetDrainTracker(side) {
+  const keys = side ? [side] : ['l', 'r'];
+  keys.forEach((k) => {
+    if (!drainTracker[k]) return;
+    drainTracker[k].anchorPct = null;
+    drainTracker[k].anchorAt = 0;
+    drainTracker[k].lastPct = null;
+  });
+}
+
+function getBatterySpec() {
+  const base = currentModel && currentModel.base;
+  return BATTERY_SPECS[base] || BATTERY_SPECS.default;
+}
+
+function getEffectiveBudHours() {
+  const spec = getBatterySpec();
+  let hours = spec.offHours;
+  if (currentAncLevel === 2) hours = Math.min(spec.offHours * 0.82, Math.max(spec.ancHours * 1.12, spec.offHours * 0.72));
+  else if (currentAncLevel === 3) hours = spec.ancHours * 1.08;
+  else if (currentAncLevel === 5) hours = spec.ancHours * 1.03;
+  else if (currentAncLevel === 4) hours = spec.ancHours;
+  else if (currentAncLevel === 6) hours = spec.ancHours * 1.04;
+  if ($('low-lat') && $('low-lat').checked) hours *= 0.91;
+  if (bassEnabled) hours *= 0.95;
+  return Math.max(1, hours);
+}
+
+function formatEtaMinutes(mins) {
+  const total = Math.max(0, Math.round(mins));
+  if (total < 1) return '<1m';
+  const h = Math.floor(total / 60);
+  const m = total % 60;
+  if (h === 0) return `${m}m`;
+  if (m === 0) return `${h}h`;
+  return `${h}h ${m}m`;
+}
+
+function recordBatterySample(side, pct, charging) {
+  if (side !== 'l' && side !== 'r') return;
+  if (charging || pct === null || pct === undefined || isNaN(pct)) {
+    resetDrainTracker(side);
+    return;
+  }
+  const t = drainTracker[side];
+  const now = Date.now();
+  if (t.anchorPct === null || pct > t.lastPct) {
+    t.anchorPct = pct;
+    t.anchorAt = now;
+  }
+  t.lastPct = pct;
+}
+
+function predictSideEta(side) {
+  const pct = trayBatt[side];
+  const charging = trayChg[side];
+  if (pct === null || pct === undefined || isNaN(pct)) {
+    return { text: '—', tip: '' };
+  }
+  if (charging) {
+    return { text: 'Charging', tip: 'Currently charging' };
+  }
+  const budHours = getEffectiveBudHours();
+  if (side === 'c') {
+    const spec = getBatterySpec();
+    if (!spec.caseMult) return { text: '—', tip: '' };
+    const mins = (pct / 100) * budHours * spec.caseMult * 60;
+    return {
+      text: `+${formatEtaMinutes(mins)}`,
+      tip: 'Estimated extra listening time from case at current mode'
+    };
+  }
+  const baseRatePerMin = 100 / (budHours * 60);
+  let effRate = baseRatePerMin;
+  let calibrated = false;
+  const t = drainTracker[side];
+  if (t && t.anchorPct !== null && t.anchorPct - pct >= 2) {
+    const elapsedMin = (Date.now() - t.anchorAt) / 60000;
+    if (elapsedMin >= 5) {
+      const obsRate = Math.min(baseRatePerMin * 2.5, Math.max(baseRatePerMin * 0.5, (t.anchorPct - pct) / elapsedMin));
+      const weight = Math.min(0.7, (t.anchorPct - pct) / 15);
+      effRate = baseRatePerMin * (1 - weight) + obsRate * weight;
+      calibrated = weight > 0;
+    }
+  }
+  const mins = pct / effRate;
+  return {
+    text: `~${formatEtaMinutes(mins)}`,
+    tip: calibrated
+      ? 'Estimated remaining listening time (calibrated from live drain)'
+      : 'Estimated remaining listening time at current mode'
+  };
+}
+
+function renderSideEta(side) {
+  const etaEl = $('eta-' + side);
+  const card = $('batt-' + side);
+  const res = predictSideEta(side);
+  trayEta[side] = res.text === '—' ? null : res.text;
+  if (etaEl) {
+    etaEl.textContent = res.text;
+    etaEl.title = res.tip || '';
+  }
+  if (card) card.classList.toggle('charging', !!trayChg[side]);
+}
+
+function refreshBatteryEtas(push = true) {
+  renderSideEta('l');
+  renderSideEta('c');
+  renderSideEta('r');
+  if (push) {
+    pushTrayBattery();
+    emitPopoverState();
+  }
+}
+
 function pushTrayBattery() {
-  try { if (window.cmf && window.cmf.setTrayBattery) window.cmf.setTrayBattery(trayBatt); } catch (_) {}
-  emitPopoverState();
+  try {
+    if (window.cmf && window.cmf.setTrayBattery) {
+      window.cmf.setTrayBattery({ ...trayBatt, eta: { ...trayEta } });
+    }
+  } catch (_) {}
 }
 
 function setBattery(side, percentage, charging = false) {
@@ -231,12 +374,14 @@ function setBattery(side, percentage, charging = false) {
   const disconnected = percentage === undefined || percentage === 'DISCONNECTED' || isNaN(percentage);
   if (disconnected) {
     card.classList.add('disc');
+    card.classList.remove('low', 'charging');
     pctEl.textContent = '—';
     barEl.style.width = '0%';
     chgEl.style.display = 'none';
     trayBatt[s] = null;
     trayChg[s] = false;
-    pushTrayBattery();
+    recordBatterySample(s, null, false);
+    refreshBatteryEtas();
     return;
   }
   card.classList.remove('disc');
@@ -246,7 +391,8 @@ function setBattery(side, percentage, charging = false) {
   chgEl.style.display = charging ? 'inline' : 'none';
   trayBatt[s] = percentage;
   trayChg[s] = !!charging;
-  pushTrayBattery();
+  recordBatterySample(s, percentage, !!charging);
+  refreshBatteryEtas();
 }
 
 /* ------------------------------------------------------------------ *
@@ -297,7 +443,7 @@ function setANCStatus(level) {
   } else {
     wrap.classList.remove('open');
   }
-  emitPopoverState();
+  refreshBatteryEtas();
 }
 function setANCDisplayUI() {}
 function displayANC() {}
@@ -369,7 +515,7 @@ $('bass-on').addEventListener('change', (e) => {
   bassEnabled = e.target.checked;
   $('bass-wrap').classList.toggle('open', bassEnabled);
   set_enhanced_bass(bassEnabled, bassLevel);
-  emitPopoverState();
+  refreshBatteryEtas();
 });
 $('bass-level').addEventListener('input', () => {
   $('bass-level-v').textContent = $('bass-level').value;
@@ -384,7 +530,7 @@ function setBassEnhance(state) {
   bassEnabled = state === 1 || state === true;
   $('bass-on').checked = bassEnabled;
   $('bass-wrap').classList.toggle('open', bassEnabled);
-  emitPopoverState();
+  refreshBatteryEtas();
 }
 function setBassLevel(level) {
   bassLevel = Math.max(1, Math.min(5, Math.round(level)));
@@ -399,11 +545,11 @@ function setBassLevel(level) {
 $('in-ear').addEventListener('change', (e) => setInEar_BT(e.target.checked ? 1 : 0));
 function setInEarCheckbox(status) { $('in-ear').checked = status === 1; }
 
-$('low-lat').addEventListener('change', (e) => { setLatency(e.target.checked ? 1 : 0); emitPopoverState(); });
+$('low-lat').addEventListener('change', (e) => { setLatency(e.target.checked ? 1 : 0); refreshBatteryEtas(); });
 function setLatencyModeCheckbox(status) {
   if (status === 1) $('low-lat').checked = true;
   else if (status === 2) $('low-lat').checked = false;
-  emitPopoverState();
+  refreshBatteryEtas();
 }
 
 /* ------------------------------------------------------------------ *
@@ -421,7 +567,7 @@ function emitPopoverState() {
     color: currentColor,
     accent: meta.accent,
     accentDim: meta.dim,
-    battery: { l: trayBatt.l, r: trayBatt.r, c: trayBatt.c, chg: { ...trayChg } },
+    battery: { l: trayBatt.l, r: trayBatt.r, c: trayBatt.c, chg: { ...trayChg }, eta: { ...trayEta } },
     anc: currentAncLevel,
     eq: currentEqLevel,
     bass: { enabled: bassEnabled, level: bassLevel },
@@ -445,7 +591,7 @@ if (window.cmf && window.cmf.onPopoverAction) {
       $('bass-on').checked = bassEnabled;
       $('bass-wrap').classList.toggle('open', bassEnabled);
       set_enhanced_bass(bassEnabled, bassLevel);
-      emitPopoverState();
+      refreshBatteryEtas();
     } else if (action.type === 'bass-level') {
       const lvl = Math.max(1, Math.min(5, Math.round(Number(action.level) || 1)));
       bassLevel = lvl;
@@ -455,7 +601,7 @@ if (window.cmf && window.cmf.onPopoverAction) {
       $('bass-level').value = lvl;
       $('bass-level-v').textContent = lvl;
       set_enhanced_bass(true, lvl);
-      emitPopoverState();
+      refreshBatteryEtas();
     } else if (action.type === 'eq') {
       const lvl = Number(action.level);
       if (lvl >= 0 && lvl <= 6) {
@@ -466,7 +612,7 @@ if (window.cmf && window.cmf.onPopoverAction) {
       const on = !!action.on;
       $('low-lat').checked = on;
       setLatency(on ? 1 : 0);
-      emitPopoverState();
+      refreshBatteryEtas();
     }
   });
 }

@@ -199,6 +199,18 @@ button { font-family: inherit; cursor: pointer; color: inherit; border: none; ba
   font-weight: 600;
 }
 .b-val .chg { color: var(--accent); margin-left: 2px; font-size: 10.5px; }
+.b-eta {
+  font-family: 'Mono', monospace;
+  font-size: 9.5px;
+  line-height: 1.1;
+  color: var(--muted);
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.b-cell.charging .b-eta { color: var(--green); }
+.b-cell.low:not(.charging) .b-eta { color: var(--red); }
 .b-bar {
   height: 3px;
   border-radius: 3px;

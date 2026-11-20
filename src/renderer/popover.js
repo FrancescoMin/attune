@@ -14,23 +14,27 @@ function fitHeight() {
   });
 }
 
-function renderBatteryCell(key, val, chg) {
+function renderBatteryCell(key, val, chg, eta) {
   const cell = $('pb-' + key);
   const valEl = $('pv-' + key);
   const chgEl = $('pc-' + key);
+  const etaEl = $('peta-' + key);
   const barEl = $('pbar-' + key);
   const off = val === null || val === undefined || isNaN(val);
   cell.classList.toggle('disc', off);
   if (off) {
-    cell.classList.remove('low');
+    cell.classList.remove('low', 'charging');
     valEl.textContent = '—';
     chgEl.style.display = 'none';
+    if (etaEl) etaEl.textContent = '—';
     barEl.style.width = '0%';
     return;
   }
   cell.classList.toggle('low', val <= 20);
+  cell.classList.toggle('charging', !!chg);
   valEl.textContent = val + '%';
   chgEl.style.display = chg ? 'inline' : 'none';
+  if (etaEl) etaEl.textContent = eta || (chg ? 'Charging' : '—');
   barEl.style.width = val + '%';
 }
 
@@ -63,9 +67,10 @@ function render(s) {
   // Battery
   const b = s.battery || {};
   const chg = b.chg || {};
-  renderBatteryCell('l', b.l, chg.l);
-  renderBatteryCell('c', b.c, chg.c);
-  renderBatteryCell('r', b.r, chg.r);
+  const eta = b.eta || {};
+  renderBatteryCell('l', b.l, chg.l, eta.l);
+  renderBatteryCell('c', b.c, chg.c, eta.c);
+  renderBatteryCell('r', b.r, chg.r, eta.r);
 
   // ANC
   const anc = Number(s.anc) || 1;

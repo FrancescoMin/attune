@@ -178,7 +178,7 @@ button { font-family: inherit; cursor: pointer; color: inherit; border: none; ba
 
 /* Battery strip */
 .m-batt {
-  flex: 1.15;
+  flex: 1.45;
   min-height: 0;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -189,13 +189,14 @@ button { font-family: inherit; cursor: pointer; color: inherit; border: none; ba
   background: var(--card);
   border: 1px solid var(--line);
   border-radius: calc(8px * var(--s));
-  padding: calc(3px * var(--sy)) calc(6px * var(--sx));
+  padding: calc(4px * var(--sy)) calc(6px * var(--sx));
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: space-between;
   gap: calc(3px * var(--sy));
   min-width: 0;
   min-height: 0;
+  overflow: hidden;
 }
 .bc.disc { opacity: 0.36; }
 .bt {
@@ -223,6 +224,19 @@ button { font-family: inherit; cursor: pointer; color: inherit; border: none; ba
   color: var(--accent);
   margin-left: 1px;
 }
+.be {
+  font-family: 'Mono', monospace;
+  font-size: calc(8.5px * var(--s));
+  line-height: 1.15;
+  color: var(--muted);
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex-shrink: 0;
+}
+.bc.charging .be { color: var(--green); }
+.bc.low:not(.charging) .be { color: var(--red); }
 .bb {
   height: max(2px, calc(2.5px * var(--sy)));
   border-radius: 2px;
@@ -241,15 +255,18 @@ button { font-family: inherit; cursor: pointer; color: inherit; border: none; ba
 
 /* Noise Control */
 .m-box {
-  flex: 1.25;
+  flex: 0.72;
   min-height: 0;
   background: var(--card);
   border: 1px solid var(--line);
   border-radius: calc(9px * var(--s));
-  padding: calc(3px * var(--sy)) calc(4px * var(--sx));
+  padding: calc(2.5px * var(--sy)) calc(4px * var(--sx));
   display: flex;
   flex-direction: column;
   gap: calc(3px * var(--sy));
+}
+.m-box.nc-open {
+  flex: 1.15;
 }
 .m-anc {
   flex: 1;
@@ -267,8 +284,8 @@ button { font-family: inherit; cursor: pointer; color: inherit; border: none; ba
   transition: background .15s, color .15s;
 }
 .m-anc button svg {
-  width: calc(15px * var(--s));
-  height: calc(15px * var(--s));
+  width: calc(13.5px * var(--s));
+  height: calc(13.5px * var(--s));
 }
 .m-anc button:hover { color: var(--text); background: var(--card-2); }
 .m-anc button.on {
@@ -306,7 +323,7 @@ button { font-family: inherit; cursor: pointer; color: inherit; border: none; ba
 
 /* Bass + Low Latency row */
 .m-row {
-  flex: 0.95;
+  flex: 0.85;
   min-height: 0;
   display: flex;
   align-items: stretch;
@@ -375,7 +392,7 @@ button { font-family: inherit; cursor: pointer; color: inherit; border: none; ba
 
 /* Cyclic EQ selector */
 .m-eq {
-  flex: 0.95;
+  flex: 0.85;
   min-height: 0;
   display: flex;
   align-items: stretch;

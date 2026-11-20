@@ -23,7 +23,7 @@ let popoverState = {
   color: 'orange',
   accent: '#ff6a1a',
   accentDim: '#b8480f',
-  battery: { l: null, r: null, c: null, chg: { l: false, r: false, c: false } },
+  battery: { l: null, r: null, c: null, chg: { l: false, r: false, c: false }, eta: { l: null, r: null, c: null } },
   anc: 1,
   eq: 0,
   bass: { enabled: false, level: 1 },
@@ -39,10 +39,12 @@ function applyLoginItem() {
 }
 function trayTip(b) {
   if (!b) return 'Attune';
+  const eta = b.eta || {};
+  const fmt = (lbl, pct, e) => lbl + ' ' + pct + '%' + (e && e !== '—' ? ' (' + e + ')' : '');
   const parts = [];
-  if (b.l != null) parts.push('L ' + b.l + '%');
-  if (b.r != null) parts.push('R ' + b.r + '%');
-  if (b.c != null) parts.push('Case ' + b.c + '%');
+  if (b.l != null) parts.push(fmt('L', b.l, eta.l));
+  if (b.r != null) parts.push(fmt('R', b.r, eta.r));
+  if (b.c != null) parts.push(fmt('Case', b.c, eta.c));
   return parts.length ? 'Attune — ' + parts.join(' · ') : 'Attune';
 }
 function loadSettings() {
@@ -201,11 +203,11 @@ function showMainWindow() {
 
 const MODE_CFG = {
   quick: { file: 'popover.html', w: 340, h: 380, minW: 280, minH: 220, maxW: 520, maxH: 680, hideOnBlur: true },
-  mini:  { file: 'mini.html',    w: 256, h: 196, minW: 140, minH: 96,  maxW: 420, maxH: 400, hideOnBlur: false }
+  mini:  { file: 'mini.html',    w: 256, h: 188, minW: 140, minH: 96,  maxW: 420, maxH: 400, hideOnBlur: false }
 };
 const modeGeom = {
   quick: { w: 340, h: 380, x: null, y: null, userMoved: false, userResized: false },
-  mini:  { w: 256, h: 196, x: null, y: null, userMoved: false, userResized: false }
+  mini:  { w: 256, h: 188, x: null, y: null, userMoved: false, userResized: false }
 };
 let activePopoverMode = null;
 let popoverProgrammatic = false;
