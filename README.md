@@ -40,6 +40,17 @@ mode that auto-matches your EQ to whatever music is playing.
   from the case, so you rarely need to click Connect.
 - **In-app feedback** — opens a pre-filled GitHub issue (and keeps a local copy).
 
+## Changes from upstream (`RocketSpot/attune`)
+
+Compared to the original [`RocketSpot/attune`](https://github.com/RocketSpot/attune) repository, this fork adds:
+
+- **Tray Floating Widgets (Quick Controls & Mini Controls)** — two switchable tray widgets synced with the main window (`src/renderer/popover.*` and `src/renderer/mini.*`, managed in `src/main/main.js`):
+  - **Quick Controls**: tray-anchored popover (auto-hides on blur) with L / Case / R battery + ETA, Noise Control (Off / Transparency / ANC + strength), Bass Enhance (toggle + levels 1–5), Equalizer presets, Low Latency toggle, and Connect / Disconnect / Open App actions.
+  - **Mini Controls**: ultra-compact, proportionally resizable floating widget (stays open on blur) with L / C / R battery + ETA, icon-only Noise Control + compact strength bar (`L` / `M` / `H` / `AUTO`), `BASS` / `LL` quick pills, and cyclic EQ preset switcher.
+  - Remembers per-mode window size and position and inherits the active earbud accent colour.
+- **Battery ETA prediction** — estimates remaining battery time for Left, Right, and Case in `src/renderer/app.js` using model battery specs, active ANC / Low-Latency draw, and live drain-rate tracking; shown in the main window, Quick Controls, Mini Controls, and the system tray tooltip.
+- **Bluetooth Audio Codec detection** (`src/main/codec.js`) — inspects the active Windows Core Audio render endpoint (`MMDeviceEnumerator`), Bluetooth PnP driver (`BthA2dp` / Alternative A2DP Driver), and registry settings to display the active profile (`A2DP` / `HFP` / `LE`), codec (e.g. SBC, AAC, LDAC, aptX), and PCM format in the device header pill and in a dedicated **Audio Codec** row (with manual refresh) under Settings.
+
 <div align="center">
 <img src="docs/screenshots/sources.png" width="70%" alt="Music sources">
 </div>
