@@ -149,7 +149,15 @@ async function tryAutoConnect() {
   const isSpp = (p) => {
     try { return (((p.getInfo() || {}).bluetoothServiceClassId) || '').toLowerCase() === SPP_UUID; } catch (_) { return false; }
   };
-  const port = ports.find(isSpp) || ports[0];
+  let port = ports.find(isSpp) || ports[0];
+  if (!port) {
+    try {
+      port = await navigator.serial.requestPort({
+        allowedBluetoothServiceClassIds: [SPP_UUID],
+        filters: [{ bluetoothServiceClassId: SPP_UUID }]
+      });
+    } catch (_) { return false; }
+  }
   if (!port) return false;
   return connectToPort(port, true);
 }

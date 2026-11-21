@@ -1271,12 +1271,19 @@ console.log('[boot] renderer scripts loaded; serial=' + (navigator.serial ? 'ava
  * ------------------------------------------------------------------ */
 if (navigator.serial && !new URLSearchParams(location.search).get('demo')) {
   navigator.serial.addEventListener('connect', () => { tryAutoConnect(); });
-  setTimeout(async () => {
+  const autoConnectWithRetry = async (attemptsLeft) => {
     if (SPPsocket) return;
     setConnectStatus('Looking for paired buds', 'busy', true);
     const ok = await tryAutoConnect();
-    if (!ok && !SPPsocket) setConnectStatus('', '');
-  }, 600);
+    if (!ok && !SPPsocket) {
+      if (attemptsLeft > 1) {
+        setTimeout(() => autoConnectWithRetry(attemptsLeft - 1), 1500);
+      } else {
+        setConnectStatus('', '');
+      }
+    }
+  };
+  setTimeout(() => autoConnectWithRetry(4), 600);
 }
 
 /* ------------------------------------------------------------------ *

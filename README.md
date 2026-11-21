@@ -59,7 +59,7 @@ Compared to the original [`RocketSpot/attune`](https://github.com/RocketSpot/att
 
 Grab a build from `dist/` (or the Releases page once published):
 
-- **`Attune Setup 1.3.0.exe`** — installer (Start Menu + Desktop shortcuts).
+- **`Attune Setup 1.4.0.exe`** — installer (Start Menu + Desktop shortcuts).
 - **`Attune-Portable.exe`** — no install, just double-click.
 
 ### Before connecting

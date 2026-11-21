@@ -162,8 +162,11 @@ function createWindow() {
 
   createTray();
 
+  const startInTray = process.argv.includes('--tray') || process.argv.includes('--minimized');
+  const startMini = process.argv.includes('--mini');
   mainWindow.once('ready-to-show', () => {
-    mainWindow.show();
+    if (!startInTray && !startMini) mainWindow.show();
+    if (startMini) showPopover('mini');
     // Smoke test: optionally capture a screenshot, then auto-quit.
     if (process.env.CMF_SMOKE || process.env.CMF_SHOT) {
       const delay = process.env.CMF_SHOT ? 1600 : 4000;
@@ -453,9 +456,13 @@ const gotLock = app.requestSingleInstanceLock();
 if (!gotLock) {
   app.quit();
 } else {
-  app.on('second-instance', () => {
-    if (mainWindow) {
+  app.on('second-instance', (_e, argv) => {
+    const hasMini = Array.isArray(argv) && argv.includes('--mini');
+    const silent = Array.isArray(argv) && (argv.includes('--tray') || argv.includes('--minimized') || hasMini);
+    if (hasMini) showPopover('mini');
+    if (mainWindow && !silent) {
       if (mainWindow.isMinimized()) mainWindow.restore();
+      mainWindow.show();
       mainWindow.focus();
     }
   });
